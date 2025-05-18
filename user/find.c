@@ -1,0 +1,71 @@
+#include "kernel/types.h"
+#include "kernel/stat.h"
+#include "user/user.h"
+#include "kernel/fs.h"
+#include "kernel/fcntl.h"
+
+const char*
+get_filename(const char* path)
+{
+    const char *filename = path;
+    while (*path != '\0') {
+        if (*path == '/')
+            filename = path + 1;
+        path++;
+    }
+    return filename;
+}
+
+void
+find(char *path, char *target)
+{
+
+    char buf[512], *p;
+    int fd;
+    struct dirent de;
+    struct stat st;
+
+    fd = open(path, O_RDONLY);
+    fstat(fd, &st);
+
+    switch (st.type) {
+        case T_DEVICE:
+        case T_FILE:
+            if (strcmp(get_filename(path), target) == 0) {
+                printf("%s\n", path);
+            }
+        break;
+
+        case T_DIR:
+            strcpy(buf, path);
+            p = buf + strlen(buf);
+            *p++ = '/';
+            while (read(fd, &de, sizeof(de)) == sizeof(de)) {
+                if (de.inum == 0) {
+                    // IMPORTANT!!!
+                    continue;
+                }
+
+                if (strcmp(de.name, ".") == 0 || strcmp(de.name, "..") == 0 ) {
+                    continue;
+                }
+
+                memmove(p, de.name, DIRSIZ);
+                p[DIRSIZ] = 0;
+                find(buf, target);
+            }
+            break;
+        }
+    close(fd);
+}
+
+int
+main(int argc, char *argv[])
+{
+    if (argc != 3) {
+        write(1, "error\n", 6);
+        exit(1);
+    } else {
+        find(argv[1], argv[2]);
+    }
+}
