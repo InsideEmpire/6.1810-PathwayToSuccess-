@@ -4,6 +4,7 @@
         "stat.h": "c",
         "fcntl.h": "c",
         "user.h": "c",
-        "fs.h": "c"
+        "fs.h": "c",
+        "param.h": "c"
     }
 }
