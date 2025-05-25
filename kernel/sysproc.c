@@ -5,6 +5,38 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
+
+// Deing used to declare the explicit existence of kfreemem() and count_active_procs()
+extern uint64 kfreemem(void);
+extern int count_active_procs(void);
+
+uint64
+sys_sysinfo(void)
+{
+  struct sysinfo backup;
+  struct proc *p = myproc();
+  uint64 address; // &info that we passed in when calling sysinfo in sysinfotest.c
+
+  argaddr(0, &address); // get &info from a0 register
+  
+  backup.freemem = kfreemem(); // return the number of bytes of free memory in kernel
+  backup.nproc = count_active_procs(); // return the number of processs whose state is UNUSED
+
+  if (copyout(p->pagetable, address, (char *)&backup, sizeof(backup)) < 0) // copy the data from backup to address(&info) by using current process's pagetable
+    return -1;
+
+  return 0;
+}
+
+uint64
+sys_trace(void)
+{
+  int mask;
+  argint(0, &mask);
+  myproc()->mask = mask;
+  return 0;
+}
 
 uint64
 sys_exit(void)

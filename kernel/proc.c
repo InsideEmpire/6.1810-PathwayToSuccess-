@@ -228,6 +228,22 @@ uchar initcode[] = {
   0x00, 0x00, 0x00, 0x00
 };
 
+// Count the active procs in kernel
+uint64
+count_active_procs(void)
+{
+  struct proc *p;
+  int count = 0;
+
+  for (p = proc; p < &proc[NPROC]; p++) {
+    if (p->state != UNUSED) {
+      count++;
+    }
+  }
+
+  return count;
+}
+
 // Set up first user process.
 void
 userinit(void)
@@ -298,6 +314,9 @@ fork(void)
 
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
+
+  // copy trace mask from parent to child
+  np->mask = p->mask;
 
   // Cause fork to return 0 in the child.
   np->trapframe->a0 = 0;
