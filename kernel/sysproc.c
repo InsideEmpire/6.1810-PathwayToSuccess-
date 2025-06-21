@@ -74,7 +74,31 @@ sys_sleep(void)
 int
 sys_pgaccess(void)
 {
-  // lab pgtbl: your code here.
+  uint64 va;
+  int num;
+  uint64 buf, bitmask = 0;
+
+  argaddr(0, &va);
+  argint(1, &num);
+  argaddr(2, &buf);
+
+  struct proc *proc = myproc();
+  for (int i = 0; i < num && i < 512; i++) {
+    pte_t *pte = walk(proc->pagetable, va + i*PGSIZE, 0);
+    if (pte == 0 || (*pte & PTE_V) == 0) {
+      printf("No PTE exists.");
+      return -1;
+    } else if (PTE_FLAGS(*pte) & PTE_A) {
+      bitmask |= (1L << i);
+    }
+    (*pte) &= ~PTE_A;
+    // *pte = ((*pte&PTE_A) ^ *pte) ^ 0 ;
+  }
+
+  if(copyout(proc->pagetable, buf, (char *)&bitmask, sizeof(bitmask)) < 0) {
+    printf("Copy error.");
+    return -1;
+  }
   return 0;
 }
 #endif
